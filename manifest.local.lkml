@@ -1,5 +1,5 @@
-application: create_view_from_table {
-  label: "Create View From Table (Local)"
+application: add_view_to_lookml {
+  label: "Add View To LookML (Local)"
   url: "https://localhost:8080/bundle.js"
   entitlements: {
     core_api_methods: [
