@@ -5,11 +5,10 @@ This is a Looker extension that allows you to quickly add a view to a model from
 - your schema has a large number of tables
 - you want to search across projects, databases or schemas
 
+To use this extension:
+
 - Requires the end user to be in development mode
 - The user must be a developer on the project they are adding to
-
-undoc.json has the API for generating lookml
-swagger.json has the rest of the APIs.
 
 ## Limiting Access
 

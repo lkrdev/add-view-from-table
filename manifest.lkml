@@ -1,6 +1,6 @@
-application: create_view_from_table {
-  label: "Create View From Table"
-  url: "https://cdn.lkr.dev/apps/create-view-from-table/latest/bundle.js"
+application: add_view_to_lookml {
+  label: "Add View To LookML"
+  url: "https://cdn.lkr.dev/apps/add-view-to-lookml/latest/bundle.js"
   entitlements: {
     core_api_methods: [
       "me",
