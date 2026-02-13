@@ -1,7 +1,9 @@
 import {
     Box,
+    ButtonTransparent,
     Checkbox,
     Divider,
+    IconButton,
     InputSearch,
     InputText,
     Label,
@@ -10,11 +12,14 @@ import {
     Space,
     SpaceVertical,
     Text,
+    Tooltip,
     Tree,
     TreeItem,
 } from '@looker/components';
 import { ISchemaTable } from '@looker/sdk';
-import React from 'react';
+import { UnfoldLess, UnfoldMore } from '@styled-icons/material';
+import { Refresh } from '@styled-icons/material/Refresh';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import useSWR from 'swr';
 import { useDebounceValue } from 'usehooks-ts';
@@ -44,10 +49,16 @@ const HierarchyExplorer = () => {
     const [debounced_value] = useDebounceValue(table_filter, 500);
 
     const sdk = useSdk();
+
+    const [expanded_schemas, setExpandedSchemas] = useState<
+        Record<string, boolean>
+    >({});
+
     const {
         data: schemas,
         isLoading: is_loading,
         error,
+        mutate,
     } = useSWR(
         connection
             ? `all_tables?connection=${connection?.name}&filter=${debounced_value}&limit=${table_filter_limit}`
@@ -62,6 +73,76 @@ const HierarchyExplorer = () => {
             );
         },
     );
+
+    // Initialize all schemas to open when data is loaded
+    useEffect(() => {
+        if (schemas && Object.keys(expanded_schemas).length === 0) {
+            const initial_state: Record<string, boolean> = {};
+            schemas.forEach((s) => {
+                if (s.name) initial_state[s.name] = true;
+            });
+            setExpandedSchemas(initial_state);
+        }
+    }, [schemas]);
+
+    const handleToggleSchema = (schema_name: string, isOpen: boolean) => {
+        setExpandedSchemas((prev) => ({
+            ...prev,
+            [schema_name]: isOpen,
+        }));
+    };
+
+    const handleFoldAll = () => {
+        if (!schemas) return;
+        const new_state: Record<string, boolean> = {};
+        schemas.forEach((s) => {
+            if (s.name) new_state[s.name] = false;
+        });
+        setExpandedSchemas(new_state);
+    };
+
+    const handleUnfoldAll = () => {
+        if (!schemas) return;
+        const new_state: Record<string, boolean> = {};
+        schemas.forEach((s) => {
+            if (s.name) new_state[s.name] = true;
+        });
+        setExpandedSchemas(new_state);
+    };
+
+    // Sort schemas alphabetically
+    const sorted_schemas = React.useMemo(() => {
+        if (!schemas) return [];
+        return [...schemas].sort((a, b) => {
+            const name_a = a.name || '';
+            const name_b = b.name || '';
+            return name_a.localeCompare(name_b, undefined, {
+                sensitivity: 'base',
+            });
+        });
+    }, [schemas]);
+
+    const [is_refreshing, setIsRefreshing] = React.useState(false);
+
+    const handleRefresh = async () => {
+        if (!connection) return;
+        setIsRefreshing(true);
+        try {
+            const result = await sdk.ok(
+                sdk.connection_tables({
+                    connection_name: connection.name || '',
+                    table_filter: debounced_value,
+                    table_limit: table_filter_limit,
+                    cache: false,
+                }),
+            );
+            mutate(result, false);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     // Equality check for SelectedTable
     const isSameTable = (a: SelectedTable, b: SelectedTable) =>
@@ -154,29 +235,64 @@ const HierarchyExplorer = () => {
 
     return (
         <SpaceVertical gap='u4' height='100%' overflow='hidden'>
-            <Space px='u4'>
-                <SpaceVertical gap='u1' flexGrow={1}>
-                    <Label htmlFor='table_search'>Search tables</Label>
-                    <InputSearch
-                        id='table_search'
-                        value={table_filter}
-                        onChange={updateTableFilter}
-                        placeholder='Search tables...'
-                    />
-                </SpaceVertical>
-                <SpaceVertical gap='u1' width='100px'>
-                    <Label htmlFor='table_limit'>Limit</Label>
-                    <InputText
-                        id='table_limit'
-                        type='number'
-                        value={String(table_filter_limit)}
-                        onChange={(e) =>
-                            updateTableFilterLimit(
-                                Number(e.currentTarget.value),
-                            )
-                        }
-                    />
-                </SpaceVertical>
+            <Space px='u4' gap='u4' between width='100%' align='center'>
+                <Space flexGrow={1} gap='u2'>
+                    <SpaceVertical gap='u1' flexGrow={1}>
+                        <Label htmlFor='table_search'>Search tables</Label>
+                        <InputSearch
+                            id='table_search'
+                            value={table_filter}
+                            onChange={updateTableFilter}
+                            placeholder='Search tables...'
+                            width='100%'
+                        />
+                    </SpaceVertical>
+                    <SpaceVertical gap='u1' width='150px' flexShrink={0}>
+                        <Label htmlFor='table_limit'>Limit</Label>
+                        <InputText
+                            id='table_limit'
+                            type='number'
+                            value={String(table_filter_limit)}
+                            onChange={(e) =>
+                                updateTableFilterLimit(
+                                    Number(e.currentTarget.value),
+                                )
+                            }
+                        />
+                    </SpaceVertical>
+                </Space>
+                <Space
+                    gap='u2'
+                    align='center'
+                    width='fit-content'
+                    alignSelf='flex-end'
+                >
+                    <Tooltip content='Refresh Schemas'>
+                        <IconButton
+                            icon={<Refresh />}
+                            label='Refresh Schemas'
+                            onClick={handleRefresh}
+                            disabled={is_refreshing}
+                            size='small'
+                        />
+                    </Tooltip>
+                    <ButtonTransparent
+                        size='xsmall'
+                        iconBefore={<UnfoldLess />}
+                        onClick={handleFoldAll}
+                        disabled={!schemas || schemas.length === 0}
+                    >
+                        Fold All
+                    </ButtonTransparent>
+                    <ButtonTransparent
+                        size='xsmall'
+                        iconBefore={<UnfoldMore />}
+                        onClick={handleUnfoldAll}
+                        disabled={!schemas || schemas.length === 0}
+                    >
+                        Unfold All
+                    </ButtonTransparent>
+                </Space>
             </Space>
             <Divider />
             {is_loading && (
@@ -189,7 +305,7 @@ const HierarchyExplorer = () => {
                     Error loading tables: {error.message}
                 </MessageBar>
             )}
-            {!is_loading && !error && schemas && (
+            {!is_loading && !error && sorted_schemas && (
                 <Box
                     flex={1}
                     px='u4'
@@ -197,12 +313,12 @@ const HierarchyExplorer = () => {
                     width='100%'
                 >
                     <SpaceVertical gap='u1'>
-                        {schemas.length === 0 ? (
+                        {sorted_schemas.length === 0 ? (
                             <Text color='subdued' textAlign='center' py='u8'>
                                 No tables found
                             </Text>
                         ) : (
-                            schemas.map((schema) => {
+                            sorted_schemas.map((schema: any) => {
                                 const schema_state = getSchemaState(
                                     schema.name,
                                     schema.tables || [],
@@ -236,61 +352,79 @@ const HierarchyExplorer = () => {
                                                 </Text>
                                             </Space>
                                         }
-                                        defaultOpen={true}
+                                        isOpen={
+                                            expanded_schemas[schema.name!] ??
+                                            true
+                                        }
+                                        onOpen={() =>
+                                            handleToggleSchema(
+                                                schema.name!,
+                                                true,
+                                            )
+                                        }
+                                        onClose={() =>
+                                            handleToggleSchema(
+                                                schema.name!,
+                                                false,
+                                            )
+                                        }
                                     >
-                                        {schema.tables?.map((table) => {
-                                            if (!table.name) return null;
-                                            const is_selected = isTableSelected(
-                                                schema.name,
-                                                table.name,
-                                            );
-                                            return (
-                                                <StyledTreeItem
-                                                    key={table.name}
-                                                    detail={
-                                                        <TableColumnsPopover
-                                                            connection_name={
-                                                                connection?.name ||
-                                                                ''
-                                                            }
-                                                            schema_name={
-                                                                schema.name ||
-                                                                ''
-                                                            }
-                                                            table_name={
-                                                                table.name!
-                                                            }
-                                                        />
-                                                    }
-                                                >
-                                                    <Space
-                                                        gap='u2'
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleTableToggle(
-                                                                schema.name,
-                                                                table.name!,
-                                                            );
-                                                        }}
+                                        {schema.tables?.map(
+                                            (table: ISchemaTable) => {
+                                                if (!table.name) return null;
+                                                const is_selected =
+                                                    isTableSelected(
+                                                        schema.name,
+                                                        table.name,
+                                                    );
+                                                return (
+                                                    <StyledTreeItem
+                                                        key={table.name}
+                                                        detail={
+                                                            <TableColumnsPopover
+                                                                connection_name={
+                                                                    connection?.name ||
+                                                                    ''
+                                                                }
+                                                                schema_name={
+                                                                    schema.name ||
+                                                                    ''
+                                                                }
+                                                                table_name={
+                                                                    table.name!
+                                                                }
+                                                            />
+                                                        }
                                                     >
-                                                        <Checkbox
-                                                            checked={
-                                                                is_selected
-                                                            }
-                                                            onChange={() =>
+                                                        <Space
+                                                            gap='u2'
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
                                                                 handleTableToggle(
                                                                     schema.name,
                                                                     table.name!,
-                                                                )
-                                                            }
-                                                        />
-                                                        <Text>
-                                                            {table.name}
-                                                        </Text>
-                                                    </Space>
-                                                </StyledTreeItem>
-                                            );
-                                        })}
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Checkbox
+                                                                checked={
+                                                                    is_selected
+                                                                }
+                                                                onChange={() =>
+                                                                    handleTableToggle(
+                                                                        schema.name,
+                                                                        table.name!,
+                                                                    )
+                                                                }
+                                                            />
+                                                            <Text>
+                                                                {table.name}
+                                                            </Text>
+                                                        </Space>
+                                                    </StyledTreeItem>
+                                                );
+                                            },
+                                        )}
                                     </Tree>
                                 );
                             })
@@ -300,6 +434,6 @@ const HierarchyExplorer = () => {
             )}
         </SpaceVertical>
     );
-};
+};;
 
 export default HierarchyExplorer;
