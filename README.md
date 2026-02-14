@@ -5,6 +5,8 @@ This is a Looker extension that allows you to quickly add a view to a model from
 - your schema has a large number of tables
 - you want to search across projects, databases or schemas
 
+![LookML Add View From Table](assets/app.png)
+
 To use this extension:
 
 - Requires the end user to be in development mode
@@ -12,7 +14,7 @@ To use this extension:
 
 Install by adding this to your manifest.lkml in a Looker project:
 
-```
+```lookml
 application: add_view_to_lookml {
   label: "Add View To LookML"
   url: "https://cdn.lkr.dev/apps/add-view-to-lookml/latest/bundle.js"
