@@ -52,21 +52,8 @@ jobs:
                   destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/${{ env.TAG }}
                   parent: false
 
-            # Optional, upload latest to GCS and clear the Cloud CDN cache
-            # - name: Upload frontend bundle to GCS
-            #   uses: google-github-actions/upload-cloud-storage@v2
-            #   with:
-            #     process_gcloudignore: false
-            #     path: dist
-            #     destination: ${{ env.BUCKET_NAME }}/apps/${{ env.APP_NAME }}/latest
-            #     parent: false
-            #
-            # - name: Set up Cloud SDK
-            #   uses: google-github-actions/setup-gcloud@v2
-
-            # - name: Invalidate Cloud CDN
-            #   run: |
-            #     gcloud compute url-maps invalidate-cdn-cache ${{ secrets.CDN_URL_MAP }} \
-            #       --project ${{ secrets.GCP_PROJECT_ID }} \
-            #       --path=/apps/${{ env.APP_NAME }}/latest/* \
-            #       --async
+            - name: Trigger Website Deploy
+              run: |
+                  curl -fSL "$DEPLOY_URL"
+              env:
+                  DEPLOY_URL: ${{ secrets.DEPLOY_URL }}

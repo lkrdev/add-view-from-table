@@ -43,6 +43,7 @@ const HierarchyExplorer = () => {
         connection,
         table_filter_limit,
         updateTableFilterLimit,
+        database,
         selected_tables,
         updateSelectedTables,
     } = useAppContext();
@@ -61,12 +62,13 @@ const HierarchyExplorer = () => {
         mutate,
     } = useSWR(
         connection
-            ? `all_tables?connection=${connection?.name}&filter=${debounced_value}&limit=${table_filter_limit}`
+            ? `all_tables?connection=${connection?.name}&database=${database || ''}&filter=${debounced_value}&limit=${table_filter_limit}`
             : null,
         async () => {
             return await sdk.ok(
                 sdk.connection_tables({
                     connection_name: connection?.name || '',
+                    database: database || undefined,
                     table_filter: debounced_value,
                     table_limit: table_filter_limit,
                 }),
@@ -131,6 +133,7 @@ const HierarchyExplorer = () => {
             const result = await sdk.ok(
                 sdk.connection_tables({
                     connection_name: connection.name || '',
+                    database: database || undefined,
                     table_filter: debounced_value,
                     table_limit: table_filter_limit,
                     cache: false,
@@ -241,7 +244,7 @@ const HierarchyExplorer = () => {
                         <Label htmlFor='table_search'>Search tables</Label>
                         <InputSearch
                             id='table_search'
-                            value={table_filter}
+                            value={table_filter || ''}
                             onChange={updateTableFilter}
                             placeholder='Search tables...'
                             width='100%'
@@ -380,6 +383,7 @@ const HierarchyExplorer = () => {
                                                 return (
                                                     <StyledTreeItem
                                                         key={table.name}
+                                                        itemRole="none"
                                                         detail={
                                                             <TableColumnsPopover
                                                                 connection_name={
