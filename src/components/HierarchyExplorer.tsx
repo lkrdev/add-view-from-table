@@ -78,7 +78,7 @@ const HierarchyExplorer = () => {
 
     // Initialize all schemas to open when data is loaded
     useEffect(() => {
-        if (schemas) {
+        if (schemas && Object.keys(expanded_schemas).length === 0) {
             const initial_state: Record<string, boolean> = {};
             schemas.forEach((s) => {
                 if (s.name) initial_state[s.name] = true;
