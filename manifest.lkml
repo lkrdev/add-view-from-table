@@ -10,7 +10,6 @@ application: add_view_to_lookml {
       "connection_schemas",
       "connection_tables",
       "connection_columns",
-      "connection_databases",
     ]
     navigation: yes
     use_embeds: yes

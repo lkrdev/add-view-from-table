@@ -7,6 +7,7 @@ import ConnectionSelect from './components/ConnectionSelect';
 import HierarchyExplorer from './components/HierarchyExplorer';
 import LkrLoading from './components/LkrLoading';
 import ProjectSelect from './components/ProjectSelect';
+import DatabaseSelect from './components/DatabaseSelect';
 import { useToast } from './components/Toast/ToastContext';
 import useConfigContext from './ConfigContext';
 import useSdk from './hooks/useSdk';
@@ -148,6 +149,15 @@ const App: React.FC = () => {
                                 />
                             </Box>
                         </Box>
+                        {connection?.dialect?.name?.toLowerCase().includes('bigquery') && (
+                            <Box
+                                display='flex'
+                                alignItems='center'
+                                style={{ gap: '8px' }}
+                            >
+                                <DatabaseSelect />
+                            </Box>
+                        )}
                     </Box>
                 </Box>
 

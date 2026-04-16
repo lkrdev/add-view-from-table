@@ -11,6 +11,7 @@ import { ISchemaColumn } from '@looker/sdk';
 import { Info } from '@styled-icons/material/Info';
 import React from 'react';
 import useSWR from 'swr';
+import { useAppContext } from '../AppContext';
 import useSdk from '../hooks/useSdk';
 
 interface TableColumnsPopoverProps {
@@ -25,17 +26,19 @@ const TableColumnsPopoverContent = ({
     table_name,
 }: TableColumnsPopoverProps) => {
     const sdk = useSdk();
+    const { database } = useAppContext();
     const {
         data,
         isLoading: is_loading,
         error,
     } = useSWR(
-        `connection_columns/${connection_name}/${schema_name}/${table_name}`,
+        `connection_columns/${connection_name}/${database || ''}/${schema_name}/${table_name}`,
         async () => {
             const r = await sdk.ok(
                 sdk.connection_columns({
                     schema_name,
                     connection_name,
+                    database: database || undefined,
                     table_names: table_name,
                 }),
             );

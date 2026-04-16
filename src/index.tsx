@@ -29,7 +29,7 @@ const mountApp = () => {
     }
 
     ReactDOM.render(
-        <ExtensionProvider>
+        <ExtensionProvider chattyTimeout={-1}>
             <AppContextProvider>
                 <ConfigContextProvider>
                     <ComponentsWrapper>
@@ -40,7 +40,7 @@ const mountApp = () => {
                 </ConfigContextProvider>
             </AppContextProvider>
         </ExtensionProvider>,
-        root
+        root,
     );
 };
 
@@ -56,13 +56,13 @@ const ComponentsWrapper = ({ children }: { children: React.ReactNode }) => {
                     key: background_color,
                     background: paper_color || DEFAULT_DASHBOARD_PAPER_COLOR,
                     text: getTextColor(
-                        paper_color || DEFAULT_DASHBOARD_PAPER_COLOR
+                        paper_color || DEFAULT_DASHBOARD_PAPER_COLOR,
                     ),
                     title: getTextColor(
-                        paper_color || DEFAULT_DASHBOARD_PAPER_COLOR
+                        paper_color || DEFAULT_DASHBOARD_PAPER_COLOR,
                     ),
                     body: getTextColor(
-                        paper_color || DEFAULT_DASHBOARD_PAPER_COLOR
+                        paper_color || DEFAULT_DASHBOARD_PAPER_COLOR,
                     ),
                 },
             }}

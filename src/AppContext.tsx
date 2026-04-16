@@ -19,7 +19,7 @@ interface AppContextType {
     project: string;
     updateProject: (project: string) => void;
     connection: IDBConnection | undefined;
-    updateDbConnection: (connection: IDBConnection | undefined) => void;
+    updateDbConnection: (connection: IDBConnection | undefined, preserveDatabase?: boolean) => void;
     getSearchParams: (global_filters?: boolean) => Record<string, string>;
     updateSearchParams: (
         params: Record<string, string | undefined | null>,
@@ -28,6 +28,8 @@ interface AppContextType {
     updateTableFilter: (table_filter: string) => void;
     table_filter_limit: number;
     updateTableFilterLimit: (table_filter_limit: number) => void;
+    database: string | undefined;
+    updateDatabase: (database: string | undefined) => void;
     selected_tables: SelectedTable[];
     updateSelectedTables: (selected_tables: SelectedTable[]) => void;
 }
@@ -66,12 +68,15 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         IDBConnection | undefined
     >();
     const [table_filter, setTableFilter] = useState(
-        getSearchParams().table_filter,
+        getSearchParams().table_filter || '',
     );
     const [table_filter_limit, setTableFilterLimit] = useState(() => {
         const limit = Number(getSearchParams().table_filter_limit);
         return !isNaN(limit) && limit > 0 ? limit : 100;
     });
+    const [database, setDatabase] = useState<string | undefined>(
+        getSearchParams().database || undefined,
+    );
     const [selected_tables, setSelectedTables] = useState<SelectedTable[]>([]);
 
     const { data: me, isLoading: is_loading_me } = useSWR('me', () =>
@@ -79,7 +84,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     );
     const { data: connections, isLoading: is_loading_connections } = useSWR(
         'all_connections',
-        () => sdk.ok(sdk.all_connections('name')),
+        () => sdk.ok(sdk.all_connections('name,dialect')),
     );
 
     const is_loading = is_loading_me || is_loading_connections;
@@ -92,7 +97,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
         updateSearchParams({ project: new_project });
     };
 
-    const updateDbConnection = (new_connection: IDBConnection | undefined) => {
+    const updateDbConnection = (new_connection: IDBConnection | undefined, preserveDatabase = false) => {
         setConnectionState(new_connection);
         if (extensionSDK) {
             extensionSDK.localStorageSetItem(
@@ -101,6 +106,16 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
             );
         }
         updateSearchParams({ connection: new_connection?.name });
+        setSelectedTables([]);
+        if (!preserveDatabase) {
+            setDatabase(undefined);
+            updateSearchParams({ database: undefined });
+        }
+    };
+
+    const updateDatabase = (new_database: string | undefined) => {
+        setDatabase(new_database);
+        updateSearchParams({ database: new_database });
         setSelectedTables([]);
     };
 
@@ -119,7 +134,7 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                         (c: IDBConnection) => c.name === name_to_find,
                     );
                     if (found) {
-                        updateDbConnection(found);
+                        updateDbConnection(found, true);
                         return;
                     }
                 }
@@ -152,6 +167,13 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
     }, [extensionSDK]);
 
     const history = useHistory();
+
+    useEffect(() => {
+        const db = getSearchParams().database || undefined;
+        if (db !== database) {
+            setDatabase(db);
+        }
+    }, [history.location.search]);
 
     const updateSearchParams = (
         params: Record<string, string | undefined | null>,
@@ -199,6 +221,8 @@ export const AppContextProvider: React.FC<{ children: React.ReactNode }> = ({
                 updateTableFilter,
                 table_filter_limit,
                 updateTableFilterLimit,
+                database,
+                updateDatabase,
                 selected_tables,
                 updateSelectedTables,
             }}

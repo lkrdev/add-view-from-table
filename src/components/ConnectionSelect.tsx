@@ -20,7 +20,7 @@ const ConnectionSelect: React.FC<ConnectionSelectProps> = ({
     const sdk = useSdk();
     const { data: connections, isLoading: is_loading } = useSWR(
         'all_connections',
-        () => sdk.ok(sdk.all_connections('name')),
+        () => sdk.ok(sdk.all_connections('name,dialect')),
     );
 
     const options =
